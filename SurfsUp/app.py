@@ -42,9 +42,9 @@ def welcome():
         f"Available Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end><br/>"
+        f"//api/v1.0/tobs<br/>"
+        f"Enter query start date in this format /api/v1.0/2016-8-17 for this route: /api/v1.0/<start><br/>"
+        f"Enter query start and end date in this format /api/v1.0/2010-5-5/2016-8-17 for this route: /api/v1.0/<start>/<end><br/>"
     )
 
 #Returns last 12 months of precip data by date based on the 1 year ago date of 2016-08-23
@@ -109,20 +109,22 @@ def temps():
 @app.route("/api/v1.0/<start>")
 def tempsbydate(start):
     
+#Returns min, max, and avg since last date entered by user.
     """Fetch the Min, avg, and max for the date
-       the path variable supplied by the user, or a 404 if not."""
+       the path variable supplied by the user in yyyy-d-m format, or a 404 if not."""
     # Create our session (link) from Python to the DB
 
     session = Session(engine)
 
+    result = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).filter(Measurement.date >= start).all()
     
-    result = session.query(func.min(Measurement.tobs).filter(Measurement.date >= '2016-8-23')).all()
-
+    results = list(np.ravel(result))
     session.close()
-    return jsonify(result)
+    return jsonify(results)
 
+#Returns min, max, and avg between start and end dates entered by user.
 @app.route("/api/v1.0/<start>/<end>")
-def tempsbydaterange(end):
+def tempsbydaterange(start, end):
     
     """Fetch the Min, avg, and max for the date range
        the path variable supplied by the user, or a 404 if not."""
@@ -130,12 +132,12 @@ def tempsbydaterange(end):
 
     session = Session(engine)
 
+    result = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+                           filter(Measurement.date >= start).filter(Measurement.date <= end).all()
     
-    result = session.query(func.min(Measurement.tobs).filter(Measurement.date >= '2016-8-23')).all()
-
+    results = list(np.ravel(result))
     session.close()
-    return jsonify(result)
-
+    return jsonify(results)
 
 if __name__ == '__main__':
    app.run(debug=True)
